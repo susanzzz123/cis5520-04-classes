@@ -95,6 +95,12 @@ if we try to compare a `Bool` and an `[Char]`, for example.
 -}
 
 -- >>> True == "True"
+-- Couldn't match type `[Char]' with `Bool'
+-- Expected: Bool
+--   Actual: String
+-- In the second argument of `(==)', namely `"True"'
+-- In the expression: True == "True"
+-- In an equation for `it_a3EC': it_a3EC = True == "True"
 
 {-
 Let's peek at the definition of the `Eq` *type class*:
@@ -140,6 +146,11 @@ of the `Eq` type class.
 -}
 
 -- >>> :info PrimaryColor
+-- type PrimaryColor :: *
+-- data PrimaryColor = Red | Green | Blue
+--   	-- Defined at C:\Users\szhan\Downloads\cis5520\cis5520-04-classes\Classes.hs:120:1
+-- instance Eq PrimaryColor
+--   -- Defined at C:\Users\szhan\Downloads\cis5520\cis5520-04-classes\Classes.hs:127:10
 
 {-
 With this instance declaration we can use `(==)` and `(/=)` on `PrimaryColor`s! Try
@@ -147,6 +158,7 @@ it out!
 -}
 
 -- >>> Red == Red
+-- True
 
 {-
 It might seem annoying, though, that we had to provide both `(==)` and
@@ -184,7 +196,12 @@ by using 'deriving' like we saw in [`Datatypes`](Datatypes.html)!)
 
 instance (Eq a) => Eq (Tree a) where
   (==) :: Tree a -> Tree a -> Bool
-  t1 == t2 = undefined
+  t1 == t2 =
+    case (t1, t2) of
+        (Empty, Empty) -> True
+        (Empty, _) -> False
+        (_, Empty) -> False
+        (Branch x1 l1 r1, Branch x2 l2 r2) -> (x1 == x2) && (l1 == l2) && (r1 == r2) 
 
 {-
 This code tells Haskell how to compare `Tree a`s for equality as long
@@ -202,10 +219,13 @@ either inline
 -}
 
 -- >>> tree1 == tree1
+-- True
 
 -- >>> tree1 == tree2
+-- False
 
 -- >>> tree1 == Empty
+-- False
 
 {-
 or as unit tests.
@@ -218,6 +238,9 @@ testTreeEq =
       "tree1 /= tree2" ~: tree1 == tree2 ~?= False,
       "tree1 /= Empty" ~: tree1 == Empty ~?= False
     ]
+testTreeEqResult = runTestTT testTreeEq
+-- >>> testTreeEqResult
+-- Counts {cases = 3, tried = 3, errors = 0, failures = 0}
 
 {-
 More qualified types
@@ -263,7 +286,7 @@ Quickly, without looking at the rest of the lecture notes, brainstorm as many
 \*overloaded* operations as you can. What overloaded functions have you seen
 in other languages? What about from your mathematics classes?
 
-FILL IN EXAMPLES HERE
+* < > += 
 
 Overloading is sometimes called *ad hoc* polymorphism, for good reason.
 Allowing unrelated functions to have the same name can lead to messy,
@@ -565,7 +588,7 @@ already have `Ord` instances (try some examples in ghci).
 
 What properties should instances of `Ord` satisfy?  Write some below:
 
-<undefined>
+associativity?
 
 `Ord` is derivable, like `Eq`, `Show` and `Read`. However, note that
 because of the superclass constraint, we *must* derive `Eq` at the same time
@@ -580,8 +603,10 @@ they appear in your source file. So, in this case, `One < Two < Three`.
 -}
 
 -- >>> One <= Two
+-- True
 
 -- >>> Three <= Two
+-- False
 
 {-
 Alternatively, if you're writing your own `Ord` instance, you only need to
@@ -746,18 +771,21 @@ Then we can see the first day
 -}
 
 -- >>> minBound :: Day
+-- Sunday
 
 {-
 and last day
 -}
 
 -- >>> maxBound :: Day
+-- Saturday
 
 {-
 as well as enumerate a list of all of them.
 -}
 
 -- >>> daysOfWeek
+-- [Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday]
 
 daysOfWeek :: [Day]
 daysOfWeek = [minBound ..]
@@ -847,7 +875,7 @@ See if you can define a Functor instance for this type:
 data Two a = MkTwo a a deriving (Eq, Show, Read, Ord)
 
 instance Functor Two where
-  fmap = undefined
+  fmap f (MkTwo x y) = MkTwo (f x) (f y)
 
 {-
 In the meantime, think about what laws instances of this class should
@@ -874,16 +902,22 @@ If we are ever confused, we can ask GHC to tell us the kinds of types.
 -}
 
 -- >>> :k Tree
+-- Tree :: * -> *
 
 -- >>> :k Int
+-- Int :: *
 
 -- >>> :k Bool
+-- Bool :: *
 
 -- >>> :k Tree Int
+-- Tree Int :: *
 
 -- >>> :k Two
+-- Two :: * -> *
 
 -- >>> :k Two Int
+-- Two Int :: *
 
 {-
 For lists, the type constructor is written `[]` when it is by itself. If it is
@@ -909,6 +943,7 @@ What does GHC say is the kind of `Either`?
 -}
 
 -- >>> :k Either
+-- Either :: * -> * -> *
 
 {-
 Monad

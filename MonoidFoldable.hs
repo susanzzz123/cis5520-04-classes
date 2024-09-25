@@ -74,16 +74,16 @@ allT2 :: Test
 allT2 = getAnd (foldList (fmap And [True, False, True])) ~?= False
 
 instance Semigroup And where
-  (<>) = undefined
+  (<>) x y = And {getAnd = getAnd x && getAnd y}
 
 instance Monoid And where
-  mempty = undefined
+  mempty = And {getAnd = True}
 
 instance Semigroup Or where
-  (<>) = undefined
+  (<>) x y = Or {getOr = getOr x || getOr y}
 
 instance Monoid Or where
-  mempty = undefined
+  mempty = Or {getOr = False}
 
 {-
 Because `And` and `Or` wrap boolean values, we can be sure that our instances
@@ -125,6 +125,12 @@ monoidOr =
       mempty <> Or False ~?= Or False
     ]
 
+-- >>> runTestTT monoidAnd
+-- Counts {cases = 12, tried = 12, errors = 0, failures = 0}
+
+-- >>> runTestTT monoidOr
+-- Counts {cases = 12, tried = 12, errors = 0, failures = 0}
+
 {-
 Foldable
 --------
@@ -147,13 +153,13 @@ Your job is to define these three related operations
 -}
 
 or :: (Foldable t) => t Bool -> Bool
-or = undefined
+or = getOr . foldMap Or
 
 all :: (Foldable t) => (a -> Bool) -> t a -> Bool
-all f = undefined
+all f = getAnd . foldMap (And . f)
 
 any :: (Foldable t) => (a -> Bool) -> t a -> Bool
-any f = undefined
+any f = getOr . foldMap (Or . f)
 
 {-
 so that the following tests pass
@@ -173,6 +179,21 @@ tf3 = any (> 0) [1 :: Int, 2, 4, 18] ~?= True
 
 tf4 :: Test
 tf4 = any (> 0) [-1 :: Int, -2, -4, -18] ~?= False
+
+-- >>> runTestTT tf0
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
+
+-- >>> runTestTT tf1
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
+
+-- >>> runTestTT tf2
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
+
+-- >>> runTestTT tf3
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
+
+-- >>> runTestTT tf4
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
 
 {-
 Application
@@ -200,7 +221,10 @@ But, for practice, complete the instance using `foldMap`.
 -}
 
 instance Foldable Tree where
-  foldMap = undefined
+  foldMap f t=
+    case t of 
+      Empty -> mempty
+      Branch x l r -> foldMap f l <> f x <> foldMap f r
 
 {-
 With this instance, we can for example, verify that all of the sample strings
@@ -209,6 +233,9 @@ above have length 1.
 
 tt1 :: Test
 tt1 = all ((== 1) . length) t1 ~?= True
+
+-- >>> runTestTT tt1
+-- Counts {cases = 1, tried = 1, errors = 0, failures = 0}
 
 {-
 Finally, look at the documentation for the
